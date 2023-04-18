@@ -1,2 +1,7 @@
 bandcamp_downloader.egg-info/
 build/
+*.log
+.DS_Store
+.envrc
+.idea/
+bandcamp-collection/
