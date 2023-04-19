@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 DOWNLOADS="bandcamp-collection"
+FORMAT="mp3-320"
 
 if [[ -z "${BANDCAMP_USERNAME}" ]]; then
     echo "Define BANDCAMP_USERNAME env var"
@@ -10,7 +11,7 @@ fi
 pipenv run ./bandcamp-downloader.py \
   --browser firefox \
   --directory "${DOWNLOADS}" \
-  --format flac \
+  --format "${FORMAT}" \
   --parallel-downloads 8 \
   --max-download-attempts 10 \
   --retry-wait 10 \
@@ -18,4 +19,5 @@ pipenv run ./bandcamp-downloader.py \
   "${BANDCAMP_USERNAME}"
 
 pipenv run ./extract.py \
-  --directory "${DOWNLOADS}"
+  --directory "${DOWNLOADS}" \
+  --subfolder "${FORMAT}"
