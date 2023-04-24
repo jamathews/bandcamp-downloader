@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 DOWNLOADS="bandcamp-collection"
-FORMAT="mp3-320"
+#FORMAT="mp3-320"
+FORMAT="flac"
+MAPPING="artist_to_folder_mapping.json"
+OUTPUT="~/Desktop/test_music"
 
 if [[ -z "${BANDCAMP_USERNAME}" ]]; then
     echo "Define BANDCAMP_USERNAME env var"
@@ -20,4 +23,9 @@ pipenv run ./bandcamp-downloader.py \
 
 pipenv run ./extract.py \
   --directory "${DOWNLOADS}" \
-  --subfolder "${FORMAT}"
+  --subfolder "${FORMAT}" \
+  --artist_to_folder_mapping "${MAPPING}" \
+  --output "${OUTPUT}"
+
+echo "Review the contents in ${OUTPUT}. If it looks right, run:
+rsync --archive --human-readable --progress --one-file-system --verbose ${OUTPUT}/ /Volumes/music"
