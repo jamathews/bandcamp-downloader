@@ -4,6 +4,7 @@ import json
 import os
 from glob import glob
 from pathlib import Path
+from shutil import move
 from zipfile import ZipFile
 
 
@@ -56,19 +57,43 @@ class Mapper:
 
 
 def extract(zip_dir, output_dir, subfolder=None, artist_mapper=None):
+    extract_zips(artist_mapper, output_dir, subfolder, zip_dir)
+    move_non_archives(artist_mapper, output_dir, zip_dir)
+
+
+def move_non_archives(artist_mapper, output_dir, zip_dir):
+    non_archives = glob(os.path.join(os.path.abspath(zip_dir), "**", "*.mp3"), recursive=True)
+    non_archives += glob(os.path.join(os.path.abspath(zip_dir), "**", "*.flac"), recursive=True)
+    for non_archive in non_archives:
+        dest = get_dest(non_archive, artist_mapper, output_dir, None)
+        dest = os.path.dirname(dest)
+        dest = os.path.join(dest, os.path.basename(non_archive))
+        print(f"{non_archive}\n\t-->\t{dest}\n")
+        if os.path.isfile(dest):
+            print(f"{dest} exists, removing")
+            os.remove(dest)
+        move(src=non_archive, dst=dest)
+
+
+def extract_zips(artist_mapper, output_dir, subfolder, zip_dir):
     archives = glob(os.path.join(os.path.abspath(zip_dir), "**", "*.zip"), recursive=True)
     for archive in archives:
         with ZipFile(archive) as zipfile:
-            artist = os.path.split(os.path.dirname(archive))[-1]
-            dest = os.path.join(output_dir,
-                                artist_mapper.get_artist_root_folder(artist),
-                                artist,
-                                os.path.splitext(os.path.basename(archive))[0]
-                                )
-            if subfolder:
-                dest = os.path.join(dest, subfolder)
+            dest = get_dest(archive, artist_mapper, output_dir, subfolder)
             print(f"{archive}\n\t-->\t{dest}\n")
             zipfile.extractall(path=dest)
+
+
+def get_dest(archive, artist_mapper, output_dir, subfolder):
+    artist = os.path.split(os.path.dirname(archive))[-1]
+    dest = os.path.join(output_dir,
+                        artist_mapper.get_artist_root_folder(artist),
+                        artist,
+                        os.path.splitext(os.path.basename(archive))[0]
+                        )
+    if subfolder:
+        dest = os.path.join(dest, subfolder)
+    return dest
 
 
 if __name__ == '__main__':
@@ -98,9 +123,9 @@ if __name__ == '__main__':
         print("Provide a mapping file with --artist_to_folder_mapping <filename>")
         exit(-1)
 
-    zips = os.path.abspath(args.directory)
-    output = os.path.abspath(args.output)
-    mapping = args.artist_to_folder_mapping
+    zips = os.path.abspath(os.path.expandvars(os.path.expanduser(args.directory)))
+    output = os.path.abspath(os.path.expandvars(os.path.expanduser(args.output)))
+    mapping = os.path.abspath(os.path.expandvars(os.path.expanduser(args.artist_to_folder_mapping)))
     mapper = Mapper(mapping, output)
 
     extract(zip_dir=zips, output_dir=output, subfolder=args.subfolder, artist_mapper=mapper)
