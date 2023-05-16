@@ -68,11 +68,12 @@ def move_non_archives(artist_mapper, output_dir, zip_dir):
         dest = get_dest(non_archive, artist_mapper, output_dir, None)
         dest = os.path.dirname(dest)
         dest = os.path.join(dest, os.path.basename(non_archive))
-        print(f"{non_archive}\n\t-->\t{dest}\n")
         if os.path.isfile(dest):
-            print(f"{dest} exists, removing")
-            os.remove(dest)
-        move(src=non_archive, dst=dest)
+            print(f'Destination Exists: "{dest}"')
+        else:
+            print(f'"{non_archive}"\n\t-->\t"{dest}"\n')
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            move(src=non_archive, dst=dest)
 
 
 def extract_zips(artist_mapper, output_dir, subfolder, zip_dir):
@@ -80,8 +81,11 @@ def extract_zips(artist_mapper, output_dir, subfolder, zip_dir):
     for archive in archives:
         with ZipFile(archive) as zipfile:
             dest = get_dest(archive, artist_mapper, output_dir, subfolder)
-            print(f"{archive}\n\t-->\t{dest}\n")
-            zipfile.extractall(path=dest)
+            if os.path.exists(dest):
+                print(f'Destination Exists: "{dest}"')
+            else:
+                print(f'"{archive}"\n\t-->\t"{dest}"\n')
+                zipfile.extractall(path=dest)
 
 
 def get_dest(archive, artist_mapper, output_dir, subfolder):
