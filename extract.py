@@ -56,12 +56,12 @@ class Mapper:
         return folder
 
 
-def extract(zip_dir, output_dir, subfolder=None, artist_mapper=None):
-    extract_zips(artist_mapper, output_dir, subfolder, zip_dir)
-    move_non_archives(artist_mapper, output_dir, zip_dir)
+def extract(zip_dir, output_dir, subfolder=None, artist_mapper=None, verbose=False):
+    extract_zips(artist_mapper, output_dir, subfolder, zip_dir, verbose=verbose)
+    move_non_archives(artist_mapper, output_dir, zip_dir, verbose=verbose)
 
 
-def move_non_archives(artist_mapper, output_dir, zip_dir):
+def move_non_archives(artist_mapper, output_dir, zip_dir, verbose=False):
     non_archives = glob(os.path.join(os.path.abspath(zip_dir), "**", "*.mp3"), recursive=True)
     non_archives += glob(os.path.join(os.path.abspath(zip_dir), "**", "*.flac"), recursive=True)
     for non_archive in non_archives:
@@ -69,20 +69,20 @@ def move_non_archives(artist_mapper, output_dir, zip_dir):
         dest = os.path.dirname(dest)
         dest = os.path.join(dest, os.path.basename(non_archive))
         if os.path.isfile(dest):
-            print(f'Destination Exists: "{dest}"')
+            verbose and print(f'Destination Exists: "{dest}"')
         else:
             print(f'"{non_archive}"\n\t-->\t"{dest}"\n')
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             move(src=non_archive, dst=dest)
 
 
-def extract_zips(artist_mapper, output_dir, subfolder, zip_dir):
+def extract_zips(artist_mapper, output_dir, subfolder, zip_dir, verbose=False):
     archives = glob(os.path.join(os.path.abspath(zip_dir), "**", "*.zip"), recursive=True)
     for archive in archives:
         with ZipFile(archive) as zipfile:
             dest = get_dest(archive, artist_mapper, output_dir, subfolder)
             if os.path.exists(dest):
-                print(f'Destination Exists: "{dest}"')
+                verbose and print(f'Destination Exists: "{dest}"')
             else:
                 print(f'"{archive}"\n\t-->\t"{dest}"\n')
                 zipfile.extractall(path=dest)
@@ -122,6 +122,12 @@ if __name__ == '__main__':
         default=None,
         help='Artist to folder mapping'
     )
+    parser.add_argument(
+        '--verbose', '-v',
+        default=False,
+        action="store_true",
+        help='verbose output'
+    )
     args = parser.parse_args()
     if not args.artist_to_folder_mapping:
         print("Provide a mapping file with --artist_to_folder_mapping <filename>")
@@ -132,4 +138,4 @@ if __name__ == '__main__':
     mapping = os.path.abspath(os.path.expandvars(os.path.expanduser(args.artist_to_folder_mapping)))
     mapper = Mapper(mapping, output)
 
-    extract(zip_dir=zips, output_dir=output, subfolder=args.subfolder, artist_mapper=mapper)
+    extract(zip_dir=zips, output_dir=output, subfolder=args.subfolder, artist_mapper=mapper, verbose=args.verbose)
