@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-date
 
 DOWNLOADS="bandcamp-collection"
 FORMATS="mp3-320 flac"
@@ -14,7 +13,7 @@ fi
 for FORMAT in ${FORMATS}; do
   echo "${FORMAT}"
 
-  time pipenv run ./bandcamp-downloader.py \
+  pipenv run ./bandcamp-downloader.py \
     --browser firefox \
     --directory "${DOWNLOADS}/${FORMAT}" \
     --format "${FORMAT}" \
@@ -24,13 +23,9 @@ for FORMAT in ${FORMATS}; do
     --verbose \
     "${BANDCAMP_USERNAME}"
 
-  time pipenv run ./extract.py \
+  pipenv run ./extract.py \
     --directory "${DOWNLOADS}/${FORMAT}" \
     --subfolder "${FORMAT}" \
     --artist_to_folder_mapping "${MAPPING}" \
     --output "${OUTPUT}"
 done
-
-#echo "Review the contents in ${OUTPUT}. If it looks right, run:
-#rsync --archive --human-readable --progress --one-file-system --verbose ${OUTPUT}/ /Volumes/music"
-date
