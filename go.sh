@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-DOWNLOADS="bandcamp-collection"
+DOWNLOADS="/Volumes/music/bandcamp-collection"
 FORMATS="mp3-320 flac"
-MAPPING="artist_to_folder_mapping.json"
+MAPPING="/Volumes/music/artist_to_folder_mapping.json"
 OUTPUT="/Volumes/music"
 
 if [[ -z "${BANDCAMP_USERNAME}" ]]; then
