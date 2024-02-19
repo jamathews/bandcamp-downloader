@@ -23,7 +23,7 @@ USER_URL = 'https://bandcamp.com/{}'
 COLLECTION_POST_URL = 'https://bandcamp.com/api/fancollection/1/collection_items'
 FILENAME_REGEX = re.compile('filename\\*=UTF-8\'\'(.*)')
 WINDOWS_DRIVE_REGEX = re.compile(r'[a-zA-Z]:\\')
-SANATIZE_PATH_WINDOWS_REGEX = re.compile(r'[<>:"/|?*]')
+SANATIZE_PATH_WINDOWS_REGEX = re.compile(r'[<>:"/|?*\\]')
 CONFIG = {
     'VERBOSE' : False,
     'OUTPUT_DIR' : None,
@@ -37,7 +37,7 @@ CONFIG = {
 }
 MAX_THREADS = 32
 DEFAULT_THREADS = 5
-DEFAULT_FILENAME_FORMAT = '{artist}/{artist} - {title}'
+DEFAULT_FILENAME_FORMAT = os.path.join('{artist}', '{artist} - {title}')
 SUPPORTED_FILE_FORMATS = [
     'aac-hi',
     'aiff-lossless',
@@ -64,7 +64,7 @@ TRACK_INFO_KEYS = [
 
 def main() -> int:
     parser = argparse.ArgumentParser(description = 'Download your collection from bandcamp. Requires a logged in session in a supported browser so that the browser cookies can be used to authenticate with bandcamp. Albums are saved into directories named after their artist. Already existing albums will have their file size compared to what is expected and re-downloaded if the sizes differ. Otherwise already existing albums will not be re-downloaded.')
-    parser.add_argument('username', type=str, help='Your bandcamp username')
+    parser.add_argument('username', type=str, help='Your bandcamp username, as it appears at the end of your bandcamp collection url, I.E. bandcamp.com/user_name')
     parser.add_argument(
         '--browser', '-b',
         type=str,
@@ -87,7 +87,7 @@ def main() -> int:
         '--format', '-f',
         default = 'mp3-320',
         choices = SUPPORTED_FILE_FORMATS,
-        help = 'What format do download the songs in. Default is \'mp3-320\'.'
+        help = 'What format to download the songs in. Default is \'mp3-320\'.'
     )
     parser.add_argument(
         '--parallel-downloads', '-p',
@@ -119,6 +119,12 @@ def main() -> int:
         default = 5,
         help = 'How long, in seconds, to wait before trying to download a file again after a failure. Defaults to \'5\'.',
     )
+    parser.add_argument(
+        '--dry-run',
+        action = 'store_true',
+        default = False,
+        help = 'Don\'t actually download files, just process all the web data and report what would have been done.',
+    )
     parser.add_argument('--verbose', '-v', action='count', default = 0)
     args = parser.parse_args()
 
@@ -132,6 +138,7 @@ def main() -> int:
     CONFIG['BROWSER'] = args.browser
     CONFIG['FORMAT'] = args.format
     CONFIG['FORCE'] = args.force
+    CONFIG['DRY_RUN'] = args.dry_run
 
     if args.wait_after_download < 0:
         parser.error('--wait-after-download must be at least 0.')
@@ -196,6 +203,11 @@ def get_download_links_for_user(_user : str) -> [str]:
         print('ERROR: No div with pagedata found for user at url [{}]'.format(USER_URL.format(_user)))
         return
     data = json.loads(html.unescape(div.get('data-blob')))
+    if 'collection_count' not in data:
+        print('ERROR: No collection info for user {}.\nPlease double check that your given username is correct.\nIt should be given exactly as it appears at the end of your bandcamp user url.\nFor example: bandcamp.com/user_name'.format(
+            _user
+        ))
+        exit(2)
 
     user_info = {
         'collection_count' : data['collection_count'],
@@ -264,11 +276,12 @@ def download_file(_url : str, _track_info : dict = None, _attempt : int = 1) -> 
             filename_match = FILENAME_REGEX.search(response.headers['content-disposition'])
             original_filename = urllib.parse.unquote(filename_match.group(1)) if filename_match else _url.split('/')[-1]
             extension = os.path.splitext(original_filename)[1]
-            filename = CONFIG['FILENAME_FORMAT'].format(**_track_info) + extension
+            # Sanitize all input values for formatting
+            safe_track_info = {
+                key: (sanitize_filename(value) if type(value) == str else value) for key, value in _track_info.items()
+            } if _track_info else {}
+            filename = CONFIG['FILENAME_FORMAT'].format(**safe_track_info) + extension
             file_path = os.path.join(CONFIG['OUTPUT_DIR'], filename)
-
-            # Remove not allowed path characters
-            file_path = sanitize_path(file_path)
 
             if os.path.exists(file_path):
                 if CONFIG['FORCE']:
@@ -282,6 +295,8 @@ def download_file(_url : str, _track_info : dict = None, _attempt : int = 1) -> 
                         if CONFIG['VERBOSE'] >= 2: CONFIG['TQDM'].write('Album at [{}] is the wrong size. Expected [{}] but was [{}]. Re-downloading.'.format(file_path, expected_size, actual_size))
 
             if CONFIG['VERBOSE'] >= 2: CONFIG['TQDM'].write('Album being saved to [{}]'.format(file_path))
+            if CONFIG['DRY_RUN']:
+                return
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'wb') as fh:
                 for chunk in response.iter_content(chunk_size=8192):
@@ -307,7 +322,7 @@ def print_exception(_e : Exception, _msg : str = '') -> None:
 
 # Windows has some picky requirements about file names
 # So let's replace known bad characters with '-'
-def sanitize_path(_path : str) -> str:
+def sanitize_filename(_path : str) -> str:
     if sys.platform.startswith('win'):
         # Ok, we need to leave on the ':' if it is like 'D:\'
         # otherwise, we need to remove it.
@@ -318,7 +333,9 @@ def sanitize_path(_path : str) -> str:
             search_path = _path[3:]
         new_path += SANATIZE_PATH_WINDOWS_REGEX.sub('-', search_path)
         return new_path
-    return _path
+    else:
+        # Remove `/`
+        return _path.replace('/', '-')
 
 def get_cookies():
     if CONFIG['COOKIES']:
