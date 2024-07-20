@@ -5,10 +5,17 @@ FORMATS="mp3-320 flac"
 MAPPING="/Volumes/music/artist_to_folder_mapping.json"
 OUTPUT="/Volumes/music"
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+  source "${SCRIPT_DIR}/.env"
+fi
+
 if [[ -z "${BANDCAMP_USERNAME}" ]]; then
     echo "Define BANDCAMP_USERNAME env var"
     exit 1
 fi
+
+cd $"{SCRIPT_DIR}" && pipenv sync
 
 for FORMAT in ${FORMATS}; do
   echo "${FORMAT}"
