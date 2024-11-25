@@ -15,7 +15,7 @@ if [[ -z "${BANDCAMP_USERNAME}" ]]; then
     exit 1
 fi
 
-cd $"{SCRIPT_DIR}" && pipenv sync
+cd "${SCRIPT_DIR}" && pipenv sync
 
 for FORMAT in ${FORMATS}; do
   echo "${FORMAT}"
