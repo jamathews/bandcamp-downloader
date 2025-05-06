@@ -564,7 +564,9 @@ def download_file(_url : str, _album : dict, _attempt : int = 1) -> bool:
             _album['download_status'] = 'Unavailable'
         elif _attempt < CONFIG['MAX_URL_ATTEMPTS']:
             if CONFIG['VERBOSE'] >=2: CONFIG['TQDM'].write('WARN: I/O Error on attempt # [{}] to download the file at [{}] to location [{}]. Trying again...'.format(_attempt, _url, _album['file_path'] + _album['extension']))
-            time.sleep(CONFIG['URL_RETRY_WAIT'])
+            if CONFIG['VERBOSE'] >=2: CONFIG['TQDM'].write('WARN: Status code [{}] for location [{}]. Trying again...'.format(e.response.status_code, _url))
+            wait_time = min(CONFIG['URL_RETRY_WAIT'] * (2 ** (_attempt - 1)), 300)  # Max 5 minutes
+            time.sleep(wait_time)
             # TODO: All exceptions get chained and reported at once.
             #       Maybe collapse down similar exceptions?
             #       Or at least give a better description of them?
