@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DOWNLOADS="/Volumes/music/bandcamp-collection"
-FORMATS="mp3-320 flac"
+FORMATS="flac mp3-320"
 MAPPING="/Volumes/music/artist_to_folder_mapping.json"
 OUTPUT="/Volumes/music"
 
