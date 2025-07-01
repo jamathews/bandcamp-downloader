@@ -27,6 +27,7 @@ for FORMAT in ${FORMATS}; do
     --parallel-downloads 8 \
     --max-download-attempts 10 \
     --retry-wait 10 \
+    --wait-after-download 10 \
     "${BANDCAMP_USERNAME}"
 
   pipenv run ./extract.py \
