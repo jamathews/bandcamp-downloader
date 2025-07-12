@@ -358,6 +358,9 @@ def key_for_item(_item) -> str:
 def merge_items_and_urls(_items : list, _urls : dict) -> dict:
     results = {}
     for item in _items:
+        if item.get('item_type') == 'subscription':
+            if CONFIG['VERBOSE']: print(f"{item.get('item_url', item)} is a subscription not a download, skipping.")
+            continue
         if not item_has_key(item) or key_for_item(item) not in _urls:
             print("WARN: couldn't find redownload URL for item_id:[{}], artist:[{}], title:[{}]".format(
                 item['item_id'], item['band_name'], item['item_title']))
@@ -559,7 +562,9 @@ def download_file(_url : str, _album : dict, _attempt : int = 1) -> bool:
         # but personal experience shows that it always happens on the same songs and never goes away
         # (unlike actual rate limiting responses, which are caught above getting the page data)
         # Basically, this response means the download is never going to work.
-        if e.__class__.__name__ == "HTTPError" and e.response.status_code == 403:
+        if not e.response:
+            CONFIG['TQDM'].write('WARN: no e.response for {} (album {}). \n {}'.format(_url, _album, e))
+        elif e.__class__.__name__ == "HTTPError" and e.response.status_code == 403:
             CONFIG['TQDM'].write('WARN: HTTP 403 when trying to download the file at [{}] to location [{}].\nBandcamp may have removed this download and you may need to download it manually from the website.'.format(_url, _album['file_path'] + _album['extension']))
             _album['download_status'] = 'Unavailable'
         elif _attempt < CONFIG['MAX_URL_ATTEMPTS']:

@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import sys
 from glob import glob
 from pathlib import Path
 from shutil import move
@@ -79,13 +80,19 @@ def move_non_archives(artist_mapper, output_dir, zip_dir, verbose=False):
 def extract_zips(artist_mapper, output_dir, subfolder, zip_dir, verbose=False):
     archives = glob(os.path.join(os.path.abspath(zip_dir), "**", "*.zip"), recursive=True)
     for archive in archives:
+        if not os.path.isfile(archive):
+            print(f'"{archive}" is not a file.')
+            continue
         with ZipFile(archive) as zipfile:
             dest = get_dest(archive, artist_mapper, output_dir, subfolder)
             if os.path.exists(dest):
                 verbose and print(f'Destination Exists: "{dest}"')
             else:
-                print(f'"{archive}"\n\t-->\t"{dest}"\n')
-                zipfile.extractall(path=dest)
+                try:
+                    print(f'"{archive}"\n\t-->\t"{dest}"\n')
+                    zipfile.extractall(path=dest)
+                except Exception as e:
+                    print(f'"{archive}" extraction failed: {e}.')
 
 
 def get_dest(archive, artist_mapper, output_dir, subfolder):
@@ -138,4 +145,7 @@ if __name__ == '__main__':
     mapping = os.path.abspath(os.path.expandvars(os.path.expanduser(args.artist_to_folder_mapping)))
     mapper = Mapper(mapping, output)
 
+    if not os.path.isdir(zips):
+        print(f"Zip directory {zips} not found")
+        sys.exit(1)
     extract(zip_dir=zips, output_dir=output, subfolder=args.subfolder, artist_mapper=mapper, verbose=args.verbose)

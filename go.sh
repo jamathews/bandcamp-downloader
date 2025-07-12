@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-DOWNLOADS="/Volumes/music/bandcamp-collection"
-FORMATS="flac mp3-320"
-MAPPING="/Volumes/music/artist_to_folder_mapping.json"
-OUTPUT="/Volumes/music"
+# Load environment variables from .env
+if [ ! -f .env ]; then
+  echo "Error: .env file not found. See .env.example for an example."
+  exit 1
+fi
+set -o allexport
+source .env
+set +o allexport
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 if [[ -f "${SCRIPT_DIR}/.env" ]]; then
