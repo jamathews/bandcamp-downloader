@@ -6,7 +6,7 @@ import sys
 from glob import glob
 from pathlib import Path
 from shutil import move
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 
 
 class Mapper:
@@ -83,16 +83,21 @@ def extract_zips(artist_mapper, output_dir, subfolder, zip_dir, verbose=False):
         if not os.path.isfile(archive):
             print(f'"{archive}" is not a file.')
             continue
-        with ZipFile(archive) as zipfile:
-            dest = get_dest(archive, artist_mapper, output_dir, subfolder)
-            if os.path.exists(dest):
-                verbose and print(f'Destination Exists: "{dest}"')
-            else:
-                try:
-                    print(f'"{archive}"\n\t-->\t"{dest}"\n')
-                    zipfile.extractall(path=dest)
-                except Exception as e:
-                    print(f'"{archive}" extraction failed: {e}.')
+        try:
+            with ZipFile(archive) as zipfile:
+                dest = get_dest(archive, artist_mapper, output_dir, subfolder)
+                if os.path.exists(dest):
+                    verbose and print(f'Destination Exists: "{dest}"')
+                else:
+                    try:
+                        print(f'"{archive}"\n\t-->\t"{dest}"\n')
+                        zipfile.extractall(path=dest)
+                    except Exception as e:
+                        print(f'"{archive}" extraction failed: {e}.')
+        except BadZipFile as e:
+            print(f'"{archive}" is not a valid zip file: {e}.')
+        except Exception as e:
+            print(f'"{archive}" extraction failed: {e}.')
 
 
 def get_dest(archive, artist_mapper, output_dir, subfolder):
