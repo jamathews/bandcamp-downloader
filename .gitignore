@@ -6,3 +6,5 @@ build/
 .idea/
 bandcamp-collection/
 .env
+.junie/
+**/__pycache__/
